@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeJournal Ultra | Zella Analytics</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            /* === MIDNIGHT PRO PALETTE === */
+            --bg-body: #020617;
+            /* Slate 950 (Deepest) */
+            --bg-nav: #0f172a;
+            /* Slate 900 */
+            --bg-card: #0f172a;
+            /* Slate 900 */
+            --bg-card-hover: #1e293b;
+            /* Slate 800 */
+            --bg-input: #020617;
+
+            --border: #1e293b;
+            --border-highlight: #334155;
+
+            /* Accents (Vibrant & Deep) */
+            --primary: #3b82f6;
+            /* Blue 500 */
+            --primary-glow: rgba(59, 130, 246, 0.15);
+            --accent: #6366f1;
+            /* Indigo 500 */
+            --win: #10b981;
+            /* Emerald 500 */
+            --loss: #ef4444;
+            /* Red 500 */
+
+            /* Text */
+            --text-main: #f8fafc;
+            /* Slate 50 */
+            --text-muted: #64748b;
+            /* Slate 500 (Lower Contrast for focus) */
+
+            --nav-height: 60px;
+            --container-width: 1200px;
+        }
+
+        /* Fluid Reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-body);
+            background-image: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.05), transparent 60%);
+            color: var(--text-main);
+            min-height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            /* Allow Scroll */
+            overflow-x: hidden;
+            font-size: 13px;
+            letter-spacing: -0.01em;
+        }
+
+        /* --- Top Navigation --- */
+        .top-nav {
+            height: var(--nav-height);
+            background: var(--bg-nav);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--text-main);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            height: 100%;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: 0.2s;
+            padding: 0 4px;
+        }
+
+        .nav-link:hover {
+            color: var(--text-main);
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* --- Main Layout --- */
+        main {
+            margin-top: var(--nav-height);
+            /* Remove fixed height to allow body scroll if preferred, or keep as is. 
+               Better to let the body scroll naturally for mobile compatibility. */
+            min-height: calc(100vh - var(--nav-height));
+            padding: 32px 24px 64px 24px;
+            /* Extra bottom padding */
+            display: flex;
+            justify-content: center;
+        }
+
+        .centered-container {
+            width: 100%;
+            max-width: var(--container-width);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* --- Main Content --- */
+        /* --- Grid Layout --- */
+        .grid-container {
+            display: grid;
+            gap: 24px;
+            max-width: 1500px;
+            margin: 0 auto;
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        /* --- Cards --- */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, border-color 0.2s, inset 0.3s ease, width 0.3s ease, height 0.3s ease;
+            position: relative;
+        }
+
+        .card.expanded {
+            position: fixed;
+            inset: 20px;
+            z-index: 1000;
+            width: auto !important;
+            height: auto !important;
+            margin: 0 !important;
+            grid-column: 1 / -1 !important;
+            background: var(--bg-body);
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.8);
+        }
+
+        .card.expanded .chart-container {
+            min-height: 0;
+            flex: 1;
+        }
+
+        .card:hover {
+            border-color: var(--border-highlight);
+            transform: translateY(-2px);
+            background: var(--bg-card-hover);
+        }
+
+        .kpi-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Grid Spans */
+        .span-1 {
+            grid-column: span 1;
+        }
+
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        .span-4 {
+            grid-column: span 4;
+        }
+
+        .chart-container {
+            flex: 1;
+            width: 100%;
+            min-height: 350px;
+            /* Increased from 220px for visibility */
+            position: relative;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Table --- */
+        .table-container {
+            background: var(--bg-card);
+            border: var(--glass-border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        th {
+            text-align: left;
+            padding: 14px 20px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.02);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.85rem;
+            color: #e4e4e7;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* --- UI Elements --- */
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            font-weight: 500;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: #121215;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 700px;
+            max-width: 95vw;
+            border-radius: 16px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            transform: scale(0.95);
+            transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 20px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* --- Forms --- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 500;
+            display: block;
+        }
+
+        input,
+        select,
+        textarea {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- Badges & Tags --- */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-long {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--win);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-short {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--loss);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: 0.2s;
+            color: #ccc;
+        }
+
+        .tag:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .tag.selected {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        /* --- Utils --- */
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .text-win {
+            color: var(--win);
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+        }
+
+        .text-loss {
+            color: var(--loss);
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .gap-2 {
+            gap: 8px;
+        }
+
+        .gap-4 {
+            gap: 16px;
+        }
+
+        .mb-4 {
+            margin-bottom: 16px;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        /* --- Calendar --- */
+        .calendar-wrapper {
+            display: none;
+        }
+
+        .calendar-wrapper.active {
+            display: block;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            padding: 16px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .calendar-day.today {
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .calendar-day.profit {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02));
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .calendar-day.loss {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.02));
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .day-num {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #71717a;
+        }
+
+        .calendar-day.profit .day-num,
+        .calendar-day.loss .day-num {
+            color: #d4d4d8;
+        }
+
+        .day-pnl {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-family: 'JetBrains Mono';
+            font-size: 0.75rem;
+        }
+
+        /* --- Media --- */
+        @media (max-width: 1200px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .span-4 {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            aside {
+                position: fixed;
+                left: -100%;
+                transition: 0.3s;
+                height: 100vh;
+            }
+
+            aside.open {
+                left: 0;
+            }
+
+            header {
+                padding: 0 16px;
+            }
+
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+
+            .span-2,
+            .span-4 {
+                grid-column: span 1;
+            }
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* New Playbooks Grid */
+        .playbook-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .playbook-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: 0.2s;
+        }
+
+        .playbook-list-item:hover {
+            border-color: var(--primary);
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+
+        .pb-info {
+            flex: 2;
+        }
+
+        .pb-stats-row {
+            display: flex;
+            gap: 24px;
+            flex: 1;
+            justify-content: flex-end;
+            margin-right: 32px;
+        }
+
+        .pb-stat-item {
+            text-align: right;
+        }
+
+        .pb-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pb-stat-val {
+            font-family: 'JetBrains Mono';
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .pb-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+
+        /* Checklist styles */
+        .checklist-item {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 0.85rem;
+        }
+
+        .checklist-item input[type="checkbox"] {
+            accent-color: var(--primary);
+        }
+
+        /* Journal Styles */
+        .journal-editor textarea {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 4px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #444;
+        }
+
+        .rating-stars i.active {
+            color: #fbbf24;
+        }
+
+        /* Import Styles */
+        .import-area {
+            background: #111;
+            border: 1px dashed var(--border);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        .pro-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.6rem;
+            font-weight: 800;
+            margin-left: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="nav-logo">
+            <i class="fa-solid fa-bolt" style="color: var(--primary);"></i>
+            <span>Zella<span style="font-weight: 300;">Analytics</span></span>
+        </div>
+
+        <div class="nav-links">
+            <div class="nav-link active" onclick="APP.nav('dashboard', this)"><i class="fa-solid fa-gauge-high"></i>
+                Dashboard</div>
+            <div class="nav-link" onclick="APP.nav('log', this)"><i class="fa-solid fa-book"></i> Trade Log</div>
+            <div class="nav-link" onclick="APP.nav('stats', this)"><i class="fa-solid fa-chart-line"></i> Statistics
+            </div>
+            <div class="nav-link" onclick="APP.nav('calendar', this)"><i class="fa-solid fa-calendar"></i> Calendar
+            </div>
+            <div class="nav-link" onclick="APP.nav('playbooks', this)"><i class="fa-solid fa-book-open"></i> Playbooks
+            </div>
+            <div class="nav-link" onclick="APP.nav('psych', this)"><i class="fa-solid fa-brain"></i> Psychology</div>
+        </div>
+
+        <div class="nav-actions">
+            <!-- Account Info -->
+            <div class="flex items-center gap-2"
+                style="background: rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);">
+                <i class="fa-solid fa-wallet text-muted"></i>
+                <select id="active-acc-select" onchange="APP.switchAccount(this.value)"
+                    style="background:none; border:none; font-weight: 600; font-size: 0.85rem; color: var(--text-main); cursor: pointer; outline:none;"></select>
+            </div>
+
+            <!-- Quick Actions -->
+            <button class="btn-icon" onclick="APP.openImportModal()" data-tooltip="Import Data"><i
+                    class="fa-solid fa-file-import"></i></button>
+            <button class="btn-icon" onclick="APP.exportData()" data-tooltip="Export CSV"><i
+                    class="fa-solid fa-download"></i></button>
+            <button class="btn-icon" onclick="APP.openAccountModal()" data-tooltip="Manage Portfolios"><i
+                    class="fa-solid fa-cog"></i></button>
+            <div style="width: 1px; height: 24px; background: var(--border); margin: 0 8px;"></div>
+            <button class="btn btn-primary" onclick="APP.openTradeModal()"
+                style="padding: 8px 16px; font-size: 0.85rem;">
+                <i class="fa-solid fa-plus"></i> <span class="hidden-sm">Log Trade</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main>
+        <div class="centered-container">
+            <div class="grid-container">
+
+                <!-- CALENDAR VIEW (initially hidden) -->
+                <div id="sect-calendar" class="calendar-wrapper span-4">
+                    <div class="card" style="padding: 0; overflow: hidden;">
+                        <div class="calendar-header">
+                            <span class="font-bold text-lg" id="cal-month-year">January 2026</span>
+                            <div class="calendar-nav">
+                                <button onclick="APP.changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                                <button onclick="APP.changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="calendar-grid">
+                            <div class="calendar-day-header">SUN</div>
+                            <div class="calendar-day-header">MON</div>
+                            <div class="calendar-day-header">TUE</div>
+                            <div class="calendar-day-header">WED</div>
+                            <div class="calendar-day-header">THU</div>
+                            <div class="calendar-day-header">FRI</div>
+                            <div class="calendar-day-header">SAT</div>
+                            <!-- Days generated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PLAYBOOKS VIEW (initially hidden) -->
+                <div id="sect-playbooks" class="span-4" style="display: none;">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <span class="font-bold text-lg">Strategy Playbooks</span>
+                            <div class="text-muted text-sm">Define and track your best setups.</div>
+                        </div>
+                        <button class="btn btn-primary" onclick="APP.openPlaybookModal()"><i
+                                class="fa-solid fa-plus"></i> New Playbook</button>
+                    </div>
+
+                    <div id="playbook-list" style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+                        <!-- JS Content -->
+                    </div>
+                </div>
+
+                <!-- DASHBOARD & STATS SECTIONS -->
+                <div id="dashboard-wrapper" class="span-4" style="display: contents;">
+                    <!-- Top KPIs -->
+                    <div class="card" id="sect-dashboard" data-tooltip="Average profit/loss per trade">
+                        <span class="kpi-label">Avg Expectancy</span>
+                        <div class="kpi-value mono" id="kpi-exp">$0.00</div>
+                    </div>
+                    <div class="card" data-tooltip="Percentage of winning trades">
+                        <span class="kpi-label">Win Rate</span>
+                        <div class="kpi-value mono" id="kpi-wr">0%</div>
+                    </div>
+                    <div class="card" data-tooltip="Gross Profit / Gross Loss">
+                        <span class="kpi-label">Profit Factor</span>
+                        <div class="kpi-value mono" id="kpi-pf">0.00</div>
+                    </div>
+                    <div class="card" data-tooltip="Total Account Balance">
+                        <span class="kpi-label">Net Equity</span>
+                        <div class="kpi-value mono" id="kpi-equity">$0.00</div>
+                    </div>
+                    <!-- New KPIs -->
+                    <div class="card" data-tooltip="Max decrease from equity peak">
+                        <span class="kpi-label">Max Drawdown</span>
+                        <div class="kpi-value mono text-loss" id="kpi-dd">0.00%</div>
+                    </div>
+                    <div class="card" data-tooltip="Your single best trade P&L">
+                        <span class="kpi-label">Best Trade</span>
+                        <div class="kpi-value mono text-win" id="kpi-best">$0.00</div>
+                    </div>
+                    <!-- Spacer Removed -->
+
+
+                    <!-- Main Charts Row -->
+                    <div class="card span-4" id="sect-stats">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="font-bold">Equity Curve</span>
+                            <div class="flex gap-2">
+                                <button class="btn-icon" onclick="APP.toggleEquityMode()"
+                                    data-tooltip="Toggle % Growth"><i class="fa-solid fa-percent"></i></button>
+                                <button class="btn-icon" onclick="APP.toggleExpand('sect-stats')"><i
+                                        class="fa-solid fa-expand"></i></button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="equityChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card span-2">
+                        <span class="font-bold">Win / Loss Ratio</span>
+                        <div class="chart-container" style="padding: 10px;">
+                            <canvas id="winLossChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card span-2">
+                        <span class="font-bold">P&L Distribution</span>
+                        <div class="chart-container">
+                            <canvas id="distChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Deep Analytics Row -->
+                    <div class="card span-2">
+                        <span class="font-bold">Performance by Day of Week</span>
+                        <div class="chart-container">
+                            <canvas id="dayOfWeekChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card span-2">
+                        <span class="font-bold">Performance by Time of Day</span>
+                        <div class="chart-container">
+                            <canvas id="timeOfDayChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card span-2">
+                        <span class="font-bold">Long vs Short Performance</span>
+                        <div
+                            style="margin-top: 30px; flex: 1; display: flex; flex-direction: column; justify-content: center;">
+
+                            <!-- Longs -->
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-win"><i class="fa-solid fa-arrow-trend-up"></i> LONGS</span>
+                                <span id="long-stat">0% WR ($0)</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div id="bar-long" class="progress-bar-fill" style="background: var(--win); width: 0%;">
+                                </div>
+                            </div>
+
+                            <!-- Shorts -->
+                            <div class="flex justify-between text-xs mb-1 mt-4">
+                                <span class="text-loss"><i class="fa-solid fa-arrow-trend-down"></i> SHORTS</span>
+                                <span id="short-stat">0% WR ($0)</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div id="bar-short" class="progress-bar-fill"
+                                    style="background: var(--loss); width: 0%;"></div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Psychology & Mistakes -->
+                    <div class="card span-2" id="sect-psych">
+                        <span class="font-bold">Behavioral Analysis (Mistakes)</span>
+                        <div id="mistake-list"
+                            style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                            <!-- JS content -->
+                        </div>
+                    </div>
+
+                    <div class="card span-2">
+                        <span class="font-bold">Strategy Performance</span>
+                        <div id="strategy-list"
+                            style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                            <!-- JS content -->
+                            <span class="text-muted text-xs">Log trades with a "Strategy" to see data here.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trade Table -->
+                <div class="table-container span-4" id="sect-log">
+                    <div class="flex flex-wrap items-center justify-between gap-2"
+                        style="padding: 16px; border-bottom: 1px solid var(--border);">
+                        <span class="font-bold">Trade History</span>
+                        <div class="flex gap-2">
+                            <select id="filter-strat" onchange="APP.renderTable()" style="width: 120px; padding: 6px;">
+                                <option value="">All Strats</option>
+                            </select>
+                            <input type="text" id="filter-search" oninput="APP.renderTable()"
+                                placeholder="Search Symbol..."
+                                style="width: 150px; padding: 6px 10px; font-size: 0.75rem;">
+                        </div>
+                    </div>
+                    <div class="table-scroll">
+                        <table id="trade-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Symbol</th>
+                                    <th>Side</th>
+                                    <th>Strategy</th>
+                                    <th>Entry</th>
+                                    <th>Exit</th>
+                                    <th>R-Unit</th>
+                                    <th>P&L</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+    </main>
+
+    <!-- TRADE DASHBOARD MODAL (RICH UI) -->
+    <div class="modal-overlay" id="modal-trade">
+        <div class="modal" style="width: 900px; max-width: 95vw;">
+            <div class="modal-header">
+                <div>
+                    <span class="font-bold text-lg" id="modal-title">Trade Dashboard</span>
+                    <div class="text-muted text-xs">Review execution details and risk metrics.</div>
+                </div>
+                <button class="btn-icon" onclick="APP.closeModal('modal-trade')"><i
+                        class="fa-solid fa-times"></i></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="trade-form" onsubmit="event.preventDefault(); APP.saveTrade()">
+                    <input type="hidden" id="edit-id">
+                    <input type="hidden" id="inp-size">
+
+                    <!-- Top Stats Row (Dynamic) -->
+                    <div class="grid-container"
+                        style="grid-template-columns: repeat(3, 1fr); margin: 0 0 24px 0; gap: 16px;">
+                        <div class="card"
+                            style="padding: 16px; border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05);">
+                            <span class="kpi-label">Projected Risk</span>
+                            <div class="flex items-center gap-2">
+                                <span class="kpi-value text-loss" id="trade-dyn-risk">$0.00</span>
+                                <span class="text-xs text-muted mono" id="trade-dyn-r-pct">(1.0%)</span>
+                            </div>
+                        </div>
+                        <div class="card" style="padding: 16px;">
+                            <span class="kpi-label">Reward / Risk</span>
+                            <span class="kpi-value text-main mono" id="trade-dyn-rr">-</span>
+                        </div>
+                        <div class="card" style="padding: 16px;">
+                            <span class="kpi-label">Position Size</span>
+                            <span class="kpi-value text-main mono" id="trade-dyn-size">0</span>
+                        </div>
+                    </div>
+
+                    <div class="form-grid" style="grid-template-columns: 2fr 1.2fr; gap: 24px;">
+
+                        <!-- LEFT COL: Trade Data -->
+                        <div class="flex flex-col gap-4">
+                            <!-- Symbol & Side -->
+                            <div class="flex gap-4">
+                                <div style="flex:1">
+                                    <label>Symbol</label>
+                                    <input type="text" id="inp-symbol" placeholder="BTCUSDT" class="mono"
+                                        style="font-size:1.1rem; font-weight:bold; letter-spacing:1px;">
+                                </div>
+                                <div style="width: 140px;">
+                                    <label>Side</label>
+                                    <select id="inp-side" class="mono" style="font-size:1rem;">
+                                        <option value="Long">Long</option>
+                                        <option value="Short">Short</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Price Levels -->
+                            <div class="calc-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                                <div>
+                                    <label>Entry Price</label>
+                                    <input type="number" step="any" id="inp-entry" class="mono"
+                                        oninput="APP.calculateSize()">
+                                </div>
+                                <div>
+                                    <label>Stop Loss</label>
+                                    <input type="number" step="any" id="inp-sl" class="mono"
+                                        oninput="APP.calculateSize()" style="border-color: rgba(239,68,68,0.3);">
+                                </div>
+                                <div>
+                                    <label>Target / Exit</label>
+                                    <input type="number" step="any" id="inp-exit" class="mono"
+                                        oninput="APP.calculateSize()" style="border-color: rgba(16,185,129,0.3);">
+                                </div>
+                            </div>
+
+                            <!-- Meta -->
+                            <div class="form-grid">
+                                <div>
+                                    <label>Date & Time</label>
+                                    <input type="datetime-local" id="inp-date">
+                                </div>
+                                <div>
+                                    <label>Strategy / Playbook</label>
+                                    <input list="strat-options" id="inp-strat" placeholder="Select Strategy">
+                                    <datalist id="strat-options"></datalist>
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div style="flex:1; display:flex; flex-direction:column;">
+                                <label>Execution Notes</label>
+                                <textarea id="inp-notes" style="flex:1; min-height:100px; resize:none;"
+                                    placeholder="Why did you take this trade? Context?"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COL: Sizing & Rules -->
+                        <div class="flex flex-col gap-4"
+                            style="border-left: 1px solid rgba(255,255,255,0.05); padding-left: 24px;">
+
+                            <!-- Position Sizing Input -->
+                            <div class="card"
+                                style="padding: 16px; border: 1px dashed var(--border-highlight); background: rgba(0,0,0,0.2);">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs font-bold text-muted uppercase">Risk Parameters</span>
+                                    <span class="text-xs mono text-main" id="equity-ref">Eq: $0</span>
+                                </div>
+
+                                <div class="flex gap-2 mb-2">
+                                    <div style="flex:1">
+                                        <label>Risk %</label>
+                                        <input type="number" id="inp-risk" value="1.0" step="0.1" class="mono"
+                                            oninput="APP.calculateSize()">
+                                    </div>
+                                    <div style="flex:1">
+                                        <label>Cash Risk ($)</label>
+                                        <input type="text" id="inp-risk-amt" readonly class="mono text-muted">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label>Total Position Value</label>
+                                    <input type="text" id="inp-total-val" readonly class="mono text-muted">
+                                </div>
+                            </div>
+
+                            <!-- Tag Selector -->
+                            <div>
+                                <label>Behavior Tags</label>
+                                <div class="tag-select" id="tag-container" style="gap:8px;">
+                                    <!-- Default tags -->
+                                    <div class="tag" onclick="this.classList.toggle('selected')">FOMO</div>
+                                    <div class="tag" onclick="this.classList.toggle('selected')">Revenge</div>
+                                    <div class="tag" onclick="this.classList.toggle('selected')">A+ Setup</div>
+                                    <div class="tag" onclick="this.classList.toggle('selected')">Impulse</div>
+                                    <div class="tag" onclick="this.classList.toggle('selected')">Mistake</div>
+                                    <div class="tag" onclick="this.classList.toggle('selected')">Late Entry</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary w-full" style="max-width:120px;"
+                    onclick="APP.closeModal('modal-trade')">Discard</button>
+                <div style="flex:1"></div>
+                <button class="btn btn-primary w-full" style="max-width:200px;" onclick="APP.saveTrade()">Save
+                    Execution</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PORTFOLIO MODAL -->
+    <div class="modal-overlay" id="modal-account">
+        <div class="modal" style="width: 400px;">
+            <div class="modal-header">
+                <span class="font-bold">Portfolio Settings</span>
+                <button class="btn-icon" onclick="APP.closeModal('modal-account')"><i
+                        class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <label>Create New Portfolio</label>
+                    <div class="flex flex-col gap-2">
+                        <input type="text" id="new-acc-name" placeholder="Account Name (e.g. Futures)">
+                        <input type="number" id="new-acc-bal" placeholder="Starting Balance">
+                        <button class="btn btn-primary" style="width: 100%;" onclick="APP.addAccount()">Add
+                            Portfolio</button>
+                    </div>
+                </div>
+                <label>Manage Portfolios</label>
+                <div id="acc-list-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JOURNAL MODAL -->
+    <div class="modal-overlay" id="modal-journal">
+        <div class="modal" style="width: 500px;">
+            <div class="modal-header">
+                <div>
+                    <span class="font-bold">Daily Journal</span>
+                    <div class="text-muted text-xs" id="journal-date-display">Date</div>
+                </div>
+                <button class="btn-icon" onclick="APP.closeModal('modal-journal')"><i
+                        class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="journal-date">
+
+                <div class="mb-4">
+                    <label>Daily Rating</label>
+                    <div class="rating-stars" id="journal-rating">
+                        <i class="fa-solid fa-star" data-val="1" onclick="APP.setRating(1)"></i>
+                        <i class="fa-solid fa-star" data-val="2" onclick="APP.setRating(2)"></i>
+                        <i class="fa-solid fa-star" data-val="3" onclick="APP.setRating(3)"></i>
+                        <i class="fa-solid fa-star" data-val="4" onclick="APP.setRating(4)"></i>
+                        <i class="fa-solid fa-star" data-val="5" onclick="APP.setRating(5)"></i>
+                    </div>
+                </div>
+
+                <div class="journal-editor flex flex-col gap-3">
+                    <div>
+                        <label>Pre-Session Plan</label>
+                        <textarea id="j-plan" placeholder="What is your focus today? Levels to watch?"></textarea>
+                    </div>
+                    <div>
+                        <label>Post-Session Review</label>
+                        <textarea id="j-review" placeholder="How did you execute? Did you follow rules?"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="APP.saveJournal()">Save Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLAYBOOK MODAL -->
+    <div class="modal-overlay" id="modal-playbook">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="font-bold">Strategy Playbook</span>
+                <button class="btn-icon" onclick="APP.closeModal('modal-playbook')"><i
+                        class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body form-grid">
+                <input type="hidden" id="edit-pb-id">
+                <div class="full-width">
+                    <label>Strategy Name</label>
+                    <input type="text" id="pb-name" placeholder="e.g. Bull Flag Breakout">
+                </div>
+                <div class="full-width">
+                    <label>Description / Criteria</label>
+                    <textarea id="pb-desc" rows="3" placeholder="Describe the setup criteria..."></textarea>
+                </div>
+                <div class="full-width">
+                    <label>Rules Checklist (One per line)</label>
+                    <textarea id="pb-rules" rows="4"
+                        placeholder="1. High volume on breakout&#10;2. RSI > 50&#10;3. No resistance overhead"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="APP.savePlaybook()">Create Playbook</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORT MODAL -->
+    <div class="modal-overlay" id="modal-import">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="font-bold">Import Data (CSV)</span>
+                <button class="btn-icon" onclick="APP.closeModal('modal-import')"><i
+                        class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-sm mb-3">
+                    Paste CSV data below. Format: <br>
+                    <span class="mono text-muted">Date, Symbol, Side, Entry, Exit, Size, Strategy</span>
+                </div>
+                <textarea id="import-text" rows="10" class="w-full mono text-xs"
+                    style="background:#111; color:#ccc; padding:10px; border-radius:6px;"
+                    placeholder="2024-01-01 10:00, BTCUSDT, Long, 45000, 46000, 0.5, Breakout"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="APP.clearData()">⚠ Clear All Data</button>
+                <button class="btn btn-primary" onclick="APP.runImport()">Import Trades</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const APP = {
+            trades: [],
+            accounts: [],
+            playbooks: [],
+            journal: [],
+            activeAccId: 'default',
+            charts: {},
+            currentMonth: new Date().getMonth(),
+            currentYear: new Date().getFullYear(),
+            equityMode: 'abs', // 'abs' or 'pct'
+
+            init() {
+                const storedT = localStorage.getItem('tj_trades_v3');
+                const storedA = localStorage.getItem('tj_accs_v3');
+                const storedP = localStorage.getItem('tj_playbooks_v1');
+                const storedJ = localStorage.getItem('tj_journal_v1');
+                const storedActive = localStorage.getItem('tj_active_v3');
+
+                if (storedA) this.accounts = JSON.parse(storedA);
+                else this.accounts = [{ id: 'default', name: 'Main Account', balance: 10000 }];
+
+                if (storedT) this.trades = JSON.parse(storedT);
+                if (storedP) this.playbooks = JSON.parse(storedP);
+                if (storedJ) this.journal = JSON.parse(storedJ);
+
+                if (storedActive) this.activeAccId = storedActive;
+                else this.activeAccId = this.accounts[0].id;
+
+                this.activeFilters = { day: null, time: null };
+
+                document.querySelectorAll('.modal-overlay').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        if (e.target === el) el.classList.remove('active');
+                    });
+                });
+
+                this.render();
+            },
+
+            save() {
+                localStorage.setItem('tj_trades_v3', JSON.stringify(this.trades));
+                localStorage.setItem('tj_accs_v3', JSON.stringify(this.accounts));
+                localStorage.setItem('tj_playbooks_v1', JSON.stringify(this.playbooks));
+                localStorage.setItem('tj_journal_v1', JSON.stringify(this.journal));
+                localStorage.setItem('tj_active_v3', this.activeAccId);
+            },
+
+            // --- Navigation Logic ---
+            nav(section, el) {
+                const items = document.querySelectorAll('.nav-link');
+                items.forEach(i => i.classList.remove('active'));
+                if (el) el.classList.add('active');
+
+                // Sidebar close logic removed (Top Nav)
+
+                const dashboard = document.getElementById('dashboard-wrapper');
+                const calendar = document.getElementById('sect-calendar');
+                const playbooks = document.getElementById('sect-playbooks');
+
+                if (dashboard) dashboard.style.display = 'none';
+                if (calendar) calendar.classList.remove('active');
+                if (playbooks) playbooks.style.display = 'none';
+
+                if (section === 'calendar') {
+                    if (calendar) calendar.classList.add('active');
+                    this.renderCalendar();
+                } else if (section === 'playbooks') {
+                    if (playbooks) playbooks.style.display = 'block';
+                    this.renderPlaybooks();
+                } else {
+                    if (dashboard) dashboard.style.display = 'contents';
+
+                    let targetId = 'sect-dashboard';
+                    if (section === 'log') targetId = 'sect-log';
+                    if (section === 'stats') targetId = 'sect-stats';
+                    if (section === 'psych') targetId = 'sect-psych';
+
+                    const target = document.getElementById(targetId);
+                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            },
+
+            // --- Business Logic ---
+            getEquity() {
+                const acc = this.accounts.find(a => a.id === this.activeAccId) || this.accounts[0];
+                let pnl = 0;
+                this.trades.filter(t => t.accId === this.activeAccId).forEach(t => pnl += this.calcPnL(t));
+                return acc.balance + pnl;
+            },
+
+            calcPnL(t) {
+                if (!t.exitPrice) return 0;
+                const diff = t.side === 'Long' ? t.exitPrice - t.entry : t.entry - t.exitPrice;
+                return diff * t.size;
+            },
+
+            calcR(t) {
+                if (!t.exitPrice || !t.sl) return null; // Logic update: open trades return null (display as "-")
+                const risk = Math.abs(t.entry - t.sl);
+                if (risk === 0) return 0;
+                const reward = t.side === 'Long' ? t.exitPrice - t.entry : t.entry - t.exitPrice;
+                return (reward / risk).toFixed(2);
+            },
+
+            calculateSize() {
+                const riskPct = parseFloat(document.getElementById('inp-risk').value) || 0;
+                const entry = parseFloat(document.getElementById('inp-entry').value) || 0;
+                const sl = parseFloat(document.getElementById('inp-sl').value) || 0;
+                const exit = parseFloat(document.getElementById('inp-exit').value) || 0;
+                const equity = this.getEquity();
+
+                document.getElementById('equity-ref').innerText = `Eq: $${Math.round(equity).toLocaleString()}`;
+
+                // Risk Amount & UI Updates
+                const riskAmt = equity * (riskPct / 100);
+                document.getElementById('inp-risk-amt').value = `$${riskAmt.toFixed(2)}`;
+
+                const riskEl = document.getElementById('trade-dyn-risk');
+                if (riskEl) {
+                    riskEl.innerText = `$${riskAmt.toFixed(2)}`;
+                    document.getElementById('trade-dyn-r-pct').innerText = `(${riskPct.toFixed(1)}%)`;
+                }
+
+                // Size & Units Logic
+                if (entry && sl && entry !== sl) {
+                    const riskPerUnit = Math.abs(entry - sl);
+                    const units = riskAmt / riskPerUnit;
+                    const totalVal = units * entry;
+
+                    document.getElementById('inp-size').value = units.toFixed(4);
+                    document.getElementById('inp-total-val').value = `$${totalVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+
+                    if (document.getElementById('trade-dyn-size')) {
+                        document.getElementById('trade-dyn-size').innerText = units.toFixed(2); // Show fewer decimals in card
+                    }
+                    if (document.getElementById('inp-size')) document.getElementById('inp-size').value = units;
+
+                    // Reward / Risk Calc
+                    if (exit && document.getElementById('trade-dyn-rr')) {
+                        const reward = Math.abs(exit - entry);
+                        const rr = reward / riskPerUnit;
+                        const rrEl = document.getElementById('trade-dyn-rr');
+                        rrEl.innerText = `${rr.toFixed(2)}R`;
+                        rrEl.className = rr >= 2 ? 'kpi-value text-win mono' : (rr >= 1 ? 'kpi-value text-main mono' : 'kpi-value text-loss mono');
+                    } else if (document.getElementById('trade-dyn-rr')) {
+                        document.getElementById('trade-dyn-rr').innerText = '-';
+                        document.getElementById('trade-dyn-rr').className = 'kpi-value text-muted mono';
+                    }
+
+                } else {
+                    document.getElementById('inp-size').value = '';
+                    document.getElementById('inp-total-val').value = '';
+                    if (document.getElementById('trade-dyn-size')) document.getElementById('trade-dyn-size').innerText = '0';
+                    if (document.getElementById('inp-size')) document.getElementById('inp-size').value = '0';
+                    if (document.getElementById('trade-dyn-rr')) document.getElementById('trade-dyn-rr').innerText = '-';
+                }
+            },
+
+            switchAccount(id) {
+                this.activeAccId = id;
+                this.save();
+                this.render();
+            },
+
+            toggleExpand(id) {
+                const el = document.getElementById(id);
+                el.classList.toggle('expanded');
+            },
+
+            toggleEquityMode() {
+                this.equityMode = this.equityMode === 'abs' ? 'pct' : 'abs';
+                this.renderCharts();
+            },
+
+            updateStratList() {
+                const dl = document.getElementById('strat-options');
+                if (!dl) return;
+                dl.innerHTML = `
+                    <option value="Breakout"><option value="Reversal"><option value="Trend Following">
+                    <option value="Scalp"><option value="Support/Resistance">
+                `;
+                this.playbooks.forEach(pb => {
+                    const opt = document.createElement('option');
+                    opt.value = pb.name;
+                    dl.appendChild(opt);
+                });
+            },
+
+            openTradeModal(id = null) {
+                const form = document.getElementById('trade-form');
+                form.reset();
+                document.getElementById('edit-id').value = '';
+                document.getElementById('modal-title').innerText = id ? "Edit Execution" : "New Trade Entry";
+
+                const now = new Date();
+                const offset = now.getTimezoneOffset() * 60000;
+                document.getElementById('inp-date').value = new Date(now - offset).toISOString().slice(0, 16);
+
+                // Reset Tags
+                const tagEls = document.querySelectorAll('.tag');
+                tagEls.forEach(el => el.classList.remove('selected'));
+
+                // Reset Dynamic UI
+                document.getElementById('inp-risk-amt').value = '';
+                document.getElementById('inp-total-val').value = '';
+                if (document.getElementById('trade-dyn-risk')) document.getElementById('trade-dyn-risk').innerText = '$0.00';
+                if (document.getElementById('trade-dyn-rr')) document.getElementById('trade-dyn-rr').innerText = '-';
+                if (document.getElementById('trade-dyn-size')) document.getElementById('trade-dyn-size').innerText = '0';
+
+                this.updateStratList();
+
+                if (id) {
+                    const t = this.trades.find(x => x.id === id);
+                    document.getElementById('edit-id').value = id;
+                    document.getElementById('inp-symbol').value = t.symbol;
+                    document.getElementById('inp-entry').value = t.entry;
+                    document.getElementById('inp-sl').value = t.sl;
+                    document.getElementById('inp-exit').value = t.exitPrice || '';
+                    document.getElementById('inp-size').value = t.size;
+
+                    // Also update dynamic display
+                    if (document.getElementById('trade-dyn-size')) document.getElementById('trade-dyn-size').innerText = t.size;
+
+                    document.getElementById('inp-side').value = t.side;
+                    document.getElementById('inp-date').value = t.date;
+                    document.getElementById('inp-strat').value = t.strategy || '';
+                    document.getElementById('inp-notes').value = t.notes || '';
+
+                    if (t.tags) t.tags.forEach(tagName => {
+                        tagEls.forEach(el => { if (el.innerText === tagName) el.classList.add('selected'); });
+                    });
+                }
+
+                this.calculateSize();
+                document.getElementById('modal-trade').classList.add('active');
+            },
+
+            closeModal(id) { document.getElementById(id).classList.remove('active'); },
+
+            openAccountModal() {
+                this.renderAccountList();
+                document.getElementById('modal-account').classList.add('active');
+            },
+
+            saveTrade() {
+                const getVal = id => document.getElementById(id).value;
+                const tags = Array.from(document.querySelectorAll('.tag.selected')).map(el => el.innerText);
+
+                const trade = {
+                    id: getVal('edit-id') || crypto.randomUUID(),
+                    accId: this.activeAccId,
+                    symbol: getVal('inp-symbol').toUpperCase(),
+                    entry: parseFloat(getVal('inp-entry')),
+                    sl: parseFloat(getVal('inp-sl')),
+                    exitPrice: getVal('inp-exit') ? parseFloat(getVal('inp-exit')) : null,
+                    size: parseFloat(getVal('inp-size')),
+                    side: getVal('inp-side'),
+                    date: getVal('inp-date'),
+                    strategy: getVal('inp-strat'),
+                    notes: getVal('inp-notes'),
+                    tags: tags
+                };
+
+                if (isNaN(trade.entry) || isNaN(trade.size)) return alert("Entry and Size are required.");
+
+                const idx = this.trades.findIndex(t => t.id === trade.id);
+                if (idx > -1) this.trades[idx] = trade;
+                else this.trades.push(trade);
+
+                this.save();
+                this.closeModal('modal-trade');
+                this.render();
+            },
+
+            deleteTrade(id) {
+                if (confirm('Delete execution?')) {
+                    this.trades = this.trades.filter(t => t.id !== id);
+                    this.save();
+                    this.render();
+                }
+            },
+
+
+
+            addAccount() {
+                const name = document.getElementById('new-acc-name').value;
+                const bal = parseFloat(document.getElementById('new-acc-bal').value);
+                if (name && !isNaN(bal)) {
+                    const id = crypto.randomUUID();
+                    this.accounts.push({ id, name, balance: bal });
+                    this.activeAccId = id;
+                    this.save();
+                    this.render();
+                    this.closeModal('modal-account');
+                }
+            },
+
+            deleteAccount(id) {
+                if (confirm('Delete this portfolio and all its trades?')) {
+                    this.trades = this.trades.filter(t => t.accId !== id);
+                    this.accounts = this.accounts.filter(a => a.id !== id);
+                    if (this.activeAccId === id) this.activeAccId = this.accounts[0].id;
+                    this.save();
+                    this.render();
+                    this.renderAccountList();
+                }
+            },
+
+
+            // --- Modal Openers & New Methods ---
+            openImportModal() { document.getElementById('modal-import').classList.add('active'); },
+            openPlaybookModal(id = null) {
+                document.getElementById('edit-pb-id').value = '';
+                document.getElementById('pb-name').value = '';
+                document.getElementById('pb-desc').value = '';
+                document.getElementById('pb-rules').value = '';
+
+                if (id) {
+                    const pb = this.playbooks.find(p => p.id === id);
+                    if (pb) {
+                        document.getElementById('edit-pb-id').value = id;
+                        document.getElementById('pb-name').value = pb.name;
+                        document.getElementById('pb-desc').value = pb.desc;
+                        document.getElementById('pb-rules').value = pb.rules.join('\n');
+                    }
+                }
+                document.getElementById('modal-playbook').classList.add('active');
+            },
+            openJournalModal(dateStr) {
+                document.getElementById('journal-date').value = dateStr;
+                document.getElementById('journal-date-display').innerText = new Date(dateStr).toDateString();
+                const entry = this.journal.find(j => j.date === dateStr);
+                document.getElementById('j-plan').value = entry ? entry.plan : '';
+                document.getElementById('j-review').value = entry ? entry.review : '';
+                this.setRating(entry ? entry.rating : 0);
+                document.getElementById('modal-journal').classList.add('active');
+            },
+            setRating(val) {
+                const stars = document.querySelectorAll('#journal-rating i');
+                stars.forEach(s => {
+                    const v = parseInt(s.dataset.val);
+                    if (v <= val) s.classList.add('active');
+                    else s.classList.remove('active');
+                });
+                document.getElementById('journal-rating').dataset.value = val;
+            },
+
+            savePlaybook() {
+                const id = document.getElementById('edit-pb-id').value;
+                const name = document.getElementById('pb-name').value;
+                const desc = document.getElementById('pb-desc').value;
+                const rulesRaw = document.getElementById('pb-rules').value;
+                if (!name) return alert('Strategy Name is required.');
+
+                const newPB = {
+                    id: id || crypto.randomUUID(),
+                    name,
+                    desc,
+                    rules: rulesRaw.split('\n').filter(line => line.trim() !== '')
+                };
+
+                if (id) {
+                    const idx = this.playbooks.findIndex(p => p.id === id);
+                    if (idx > -1) this.playbooks[idx] = newPB;
+                } else {
+                    this.playbooks.push(newPB);
+                }
+
+                this.save();
+                this.renderPlaybooks();
+                this.closeModal('modal-playbook');
+            },
+            deletePlaybook(id) {
+                if (confirm('Delete this playbook? Trades using it will keep the strategy name but lose the link.')) {
+                    this.playbooks = this.playbooks.filter(p => p.id !== id);
+                    this.save();
+                    this.renderPlaybooks();
+                }
+            },
+            saveJournal() {
+                const date = document.getElementById('journal-date').value;
+                const rating = parseInt(document.getElementById('journal-rating').dataset.value || 0);
+                const plan = document.getElementById('j-plan').value;
+                const review = document.getElementById('j-review').value;
+                const idx = this.journal.findIndex(j => j.date === date);
+                if (idx > -1) this.journal[idx] = { date, rating, plan, review };
+                else this.journal.push({ date, rating, plan, review });
+                this.save();
+                this.closeModal('modal-journal');
+                this.renderCalendar();
+            },
+            runImport() {
+                const text = document.getElementById('import-text').value;
+                if (!text) return;
+                const lines = text.split('\n');
+                let count = 0;
+                lines.forEach(line => {
+                    const p = line.split(',').map(s => s.trim());
+                    if (p.length >= 6) {
+                        try {
+                            const t = {
+                                id: crypto.randomUUID(), accId: this.activeAccId,
+                                date: new Date(p[0]).toISOString(), symbol: p[1].toUpperCase(),
+                                side: p[2], entry: parseFloat(p[3]), exitPrice: parseFloat(p[4]),
+                                size: parseFloat(p[5]), strategy: p[6] || '', notes: 'Imported'
+                            };
+                            if (!isNaN(t.entry) && !isNaN(t.size)) { this.trades.push(t); count++; }
+                        } catch (e) { }
+                    }
+                });
+                alert(`Imported ${count} trades.`);
+                this.save();
+                this.render();
+                this.closeModal('modal-import');
+            },
+            clearData() {
+                if (confirm('CRITICAL: This will wipe ALL trades, accounts, playbooks and journal. Sure?')) {
+                    this.trades = []; this.accounts = [{ id: 'default', name: 'Main Account', balance: 10000 }];
+                    this.playbooks = []; this.journal = []; this.activeAccId = 'default';
+                    this.save(); location.reload();
+                }
+            },
+
+            renderPlaybooks() {
+                const list = document.getElementById('playbook-list');
+                list.innerHTML = '';
+                if (this.playbooks.length === 0) { list.innerHTML = `<div class="text-muted" style="grid-column: 1/-1; text-align:center; padding:40px;">No playbooks yet.</div>`; return; }
+                this.playbooks.forEach(pb => {
+                    const trades = this.trades.filter(t => t.accId === this.activeAccId && t.strategy === pb.name);
+                    const pnl = trades.reduce((s, t) => s + this.calcPnL(t), 0);
+                    const wins = trades.filter(t => this.calcPnL(t) > 0).length;
+                    const wr = trades.length ? (wins / trades.length) * 100 : 0;
+
+                    const el = document.createElement('div');
+                    el.className = 'playbook-list-item';
+                    el.innerHTML = `
+                        <div class="pb-info">
+                            <div class="font-bold text-lg" style="color:var(--primary); margin-bottom:4px;">${pb.name}</div>
+                            <div class="text-muted text-sm">${pb.desc || 'No description provided.'}</div>
+                            <div class="text-xs text-muted mt-2"><i class="fa-solid fa-list-check"></i> ${pb.rules.length} Rules</div>
+                        </div>
+                        
+                        <div class="pb-stats-row">
+                            <div class="pb-stat-item">
+                                <div class="pb-stat-label">Trades</div>
+                                <div class="pb-stat-val">${trades.length}</div>
+                            </div>
+                            <div class="pb-stat-item">
+                                <div class="pb-stat-label">Win Rate</div>
+                                <div class="pb-stat-val">${wr.toFixed(0)}%</div>
+                            </div>
+                            <div class="pb-stat-item">
+                                <div class="pb-stat-label">Net P&L</div>
+                                <div class="pb-stat-val ${pnl >= 0 ? 'text-win' : 'text-loss'}">$${pnl.toFixed(0)}</div>
+                            </div>
+                        </div>
+
+                        <div class="pb-actions">
+                            <button class="btn-icon" onclick="APP.openPlaybookModal('${pb.id}')"><i class="fa-solid fa-edit"></i></button>
+                            <button class="btn-icon" onclick="APP.deletePlaybook('${pb.id}')"><i class="fa-solid fa-trash" style="color:var(--loss)"></i></button>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+            },
+
+            // --- Rendering ---
+            render() {
+                this.renderPlaybooks();
+                this.renderDropdown();
+                this.renderKPIs();
+                this.renderTable();
+                this.renderCharts();
+                this.renderMistakes();
+                this.renderStrategies();
+                this.renderAccountList();
+                this.renderCalendar();
+            },
+
+            renderDropdown() {
+                const sel = document.getElementById('active-acc-select');
+                sel.innerHTML = '';
+                this.accounts.forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a.id;
+                    opt.innerText = a.name;
+                    sel.appendChild(opt);
+                });
+                sel.value = this.activeAccId;
+            },
+
+            renderKPIs() {
+                const filtered = this.trades.filter(t => t.accId === this.activeAccId);
+                const totalPnL = filtered.reduce((s, t) => s + this.calcPnL(t), 0);
+                const wins = filtered.filter(t => this.calcPnL(t) > 0);
+                const losses = filtered.filter(t => this.calcPnL(t) < 0);
+
+                const wr = filtered.length ? (wins.length / filtered.length) * 100 : 0;
+                const grossP = wins.reduce((s, t) => s + this.calcPnL(t), 0);
+                const grossL = Math.abs(losses.reduce((s, t) => s + this.calcPnL(t), 0));
+
+                // Fix Profit Factor edge case: invalid if no losses
+                let pf = 0;
+                if (grossL === 0 && grossP > 0) pf = 99.99; // Essentially infinite
+                else if (grossL > 0) pf = grossP / grossL;
+
+                // Max Drawdown Calculation
+                let peak = -Infinity;
+                let maxDD = 0;
+                let running = 0;
+                // Sort by date mostly works, but ideally needs full sorting
+                const sortedForDD = [...filtered].sort((a, b) => new Date(a.date) - new Date(b.date));
+                sortedForDD.forEach(t => {
+                    running += this.calcPnL(t);
+                    if (running > peak) peak = running;
+                    const dd = peak - running;
+                    if (dd > maxDD) maxDD = dd;
+                });
+
+                const acc = this.accounts.find(a => a.id === this.activeAccId);
+                const startBal = acc ? acc.balance : 1;
+                const ddPct = (maxDD / (startBal + (peak > 0 ? peak : 0))) * 100;
+
+                // Best Trade
+                const best = filtered.length ? Math.max(...filtered.map(t => this.calcPnL(t))) : 0;
+
+                document.getElementById('kpi-exp').innerText = `$${(filtered.length ? totalPnL / filtered.length : 0).toFixed(2)}`;
+                document.getElementById('kpi-wr').innerText = `${wr.toFixed(0)}%`;
+                document.getElementById('kpi-pf').innerText = pf.toFixed(2);
+                document.getElementById('kpi-equity').innerText = `$${this.getEquity().toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+                document.getElementById('kpi-dd').innerText = `-${ddPct.toFixed(1)}%`;
+                document.getElementById('kpi-best').innerText = `$${best.toFixed(2)}`;
+
+
+                // Long vs Short Logic
+                const longs = filtered.filter(t => t.side === 'Long');
+                const shorts = filtered.filter(t => t.side === 'Short');
+
+                const longWins = longs.filter(t => this.calcPnL(t) > 0).length;
+                const shortWins = shorts.filter(t => this.calcPnL(t) > 0).length;
+
+                const longWr = longs.length ? (longWins / longs.length) * 100 : 0;
+                const shortWr = shorts.length ? (shortWins / shorts.length) * 100 : 0;
+
+                const longPnL = longs.reduce((s, t) => s + this.calcPnL(t), 0);
+                const shortPnL = shorts.reduce((s, t) => s + this.calcPnL(t), 0);
+
+                document.getElementById('long-stat').innerText = `${longWr.toFixed(0)}% WR ($${longPnL.toFixed(0)})`;
+                document.getElementById('short-stat').innerText = `${shortWr.toFixed(0)}% WR ($${shortPnL.toFixed(0)})`;
+
+                document.getElementById('bar-long').style.width = `${longWr}%`;
+                document.getElementById('bar-short').style.width = `${shortWr}%`;
+            },
+
+            renderTable() {
+                const tbody = document.querySelector('#trade-table tbody');
+                tbody.innerHTML = '';
+
+                const search = document.getElementById('filter-search').value.toLowerCase();
+                const strat = document.getElementById('filter-strat').value;
+
+                // --- Filtering Logic ---
+                const filtered = this.trades.filter(t => {
+                    const date = new Date(t.date);
+                    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue...
+                    const hour = date.getHours(); // 0-23
+
+                    // Chart Filters
+                    if (this.activeFilters.day && dayName !== this.activeFilters.day) return false;
+                    if (this.activeFilters.time) {
+                        // Time buckets must match chart labels: "Morning (6-10)", etc
+                        let bucket = 'Overnight';
+                        if (hour >= 6 && hour < 10) bucket = 'Morning';
+                        else if (hour >= 10 && hour < 14) bucket = 'Mid-Day';
+                        else if (hour >= 14 && hour < 18) bucket = 'Afternoon';
+                        else if (hour >= 18 && hour < 22) bucket = 'Evening';
+
+                        if (!this.activeFilters.time.startsWith(bucket)) return false;
+                    }
+
+                    return t.accId === this.activeAccId &&
+                        (search ? t.symbol.toLowerCase().includes(search) : true) &&
+                        (strat ? t.strategy === strat : true);
+                }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                // --- Filter Chips UI ---
+                const chipContainer = document.getElementById('filter-chips');
+                if (!chipContainer) {
+                    // Inject chip container if missing
+                    const tableHeader = document.querySelector('.table-container .flex');
+                    const d = document.createElement('div');
+                    d.id = 'filter-chips';
+                    d.className = 'flex gap-2 mt-2 w-full';
+                    d.style.padding = '0 16px 12px';
+                    if (tableHeader) tableHeader.parentNode.insertBefore(d, tableHeader.nextSibling);
+                } else {
+                    chipContainer.innerHTML = '';
+                    if (this.activeFilters.day) chipContainer.appendChild(this.createChip('Day', this.activeFilters.day, () => { this.activeFilters.day = null; this.render(); }));
+                    if (this.activeFilters.time) chipContainer.appendChild(this.createChip('Time', this.activeFilters.time, () => { this.activeFilters.time = null; this.render(); }));
+                }
+
+                // --- Render Rows ---
+                filtered.forEach(t => {
+                    const pnl = this.calcPnL(t);
+                    const r = this.calcR(t);
+                    const rDisplay = r === null ? '<span class="text-muted" style="opacity:0.6">-</span>' : `${r}R`;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-muted text-xs">${new Date(t.date).toLocaleString()}</td>
+                        <td class="font-bold">${t.symbol}</td>
+                        <td><span class="badge ${t.side === 'Long' ? 'badge-long' : 'badge-short'}">${t.side}</span></td>
+                        <td class="text-muted text-xs">${t.strategy || '-'}</td>
+                        <td class="mono">${t.entry.toFixed(2)}</td>
+                        <td class="mono">${t.exitPrice ? t.exitPrice.toFixed(2) : '<span style="font-style:italic; opacity:0.5">Open</span>'}</td>
+                        <td class="mono">${rDisplay}</td>
+                        <td class="mono font-bold ${pnl >= 0 ? 'text-win' : 'text-loss'}">${pnl.toFixed(2)}</td>
+                        <td style="text-align: right;">
+                            <button class="btn-icon" onclick="APP.openTradeModal('${t.id}')"><i class="fa-solid fa-edit"></i></button>
+                            <button class="btn-icon" onclick="APP.deleteTrade('${t.id}')"><i class="fa-solid fa-trash" style="color:var(--loss)"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            createChip(label, value, onClose) {
+                const el = document.createElement('div');
+                el.className = 'badge';
+                el.style.cssText = 'background:var(--primary); color:#fff; display:flex; gap:6px; align-items:center; cursor:default;';
+                el.innerHTML = `<span>${label}: ${value}</span>`;
+                const close = document.createElement('i');
+                close.className = 'fa-solid fa-times';
+                close.style.cursor = 'pointer';
+                close.onclick = onClose;
+                el.appendChild(close);
+                return el;
+            },
+
+            renderCharts() {
+                const filtered = this.trades.filter(t => t.accId === this.activeAccId).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                // --- Equity Curve ---
+                const eCtx = document.getElementById('equityChart').getContext('2d');
+                const acc = this.accounts.find(a => a.id === this.activeAccId) || this.accounts[0];
+                const startBal = acc.balance; // Initial balance before filtered trades? No, assuming acc.balance is START.
+                // Wait, logic in init says acc.balance is "current". But here we treated it as start in old code?
+                // Actually old code: let running = acc.balance; data = [acc.balance, ...]. This implies acc.balance IS start.
+
+                let running = startBal;
+                const labels = ['Start', ...filtered.map(t => new Date(t.date).toLocaleDateString())];
+                let data = [startBal, ...filtered.map(t => { running += this.calcPnL(t); return running; })];
+
+                // Handle Percentage Mode
+                if (this.equityMode === 'pct') {
+                    data = data.map(v => ((v - startBal) / startBal) * 100);
+                }
+
+                // Gradient
+                const gradient = eCtx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+                gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+                if (this.charts.equity) this.charts.equity.destroy();
+                this.charts.equity = new Chart(eCtx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data,
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            backgroundColor: gradient,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            pointHitRadius: 20
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: '#1e293b',
+                                titleColor: '#fff',
+                                bodyColor: '#cbd5e1',
+                                borderColor: '#334155',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: (ctx) => {
+                                        let label = ctx.dataset.label || '';
+                                        if (label) label += ': ';
+                                        if (this.equityMode === 'pct') return label + ctx.parsed.y.toFixed(2) + '%';
+                                        return label + '$' + ctx.parsed.y.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { display: false },
+                            y: {
+                                grid: { color: '#334155' },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    callback: (val) => {
+                                        return this.equityMode === 'pct' ? val + '%' : '$' + val;
+                                    }
+                                },
+                                border: { display: false }
+                            }
+                        }
+                    }
+                });
+
+                // --- P&L Distribution ---
+                const dCtx = document.getElementById('distChart').getContext('2d');
+                const bins = { 'Loss Large': 0, 'Loss Med': 0, 'Small': 0, 'Win Med': 0, 'Win Large': 0 };
+                filtered.forEach(t => {
+                    const p = this.calcPnL(t);
+                    if (p <= -500) bins['Loss Large']++;
+                    else if (p < -50) bins['Loss Med']++;
+                    else if (p <= 50) bins['Small']++;
+                    else if (p < 500) bins['Win Med']++;
+                    else bins['Win Large']++;
+                });
+
+                if (this.charts.dist) this.charts.dist.destroy();
+                this.charts.dist = new Chart(dCtx, {
+                    type: 'bar',
+                    data: { labels: Object.keys(bins), datasets: [{ data: Object.values(bins), backgroundColor: ['#ef4444', '#f87171', '#52525b', '#34d399', '#10b981'] }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
+                });
+
+                // --- Win/Loss Donut ---
+                const wCtx = document.getElementById('winLossChart').getContext('2d');
+                const wins = filtered.filter(t => this.calcPnL(t) > 0).length;
+                const losses = filtered.filter(t => this.calcPnL(t) < 0).length;
+                const be = filtered.filter(t => this.calcPnL(t) === 0).length;
+
+                if (this.charts.wl) this.charts.wl.destroy();
+                this.charts.wl = new Chart(wCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Win', 'Loss', 'BE'],
+                        datasets: [{
+                            data: [wins, losses, be],
+                            backgroundColor: ['#10b981', '#ef4444', '#52525b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#888', boxWidth: 10 } } }
+                    }
+                });
+
+                // --- Day of Week ---
+                const dowCtx = document.getElementById('dayOfWeekChart').getContext('2d');
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const dayPnl = [0, 0, 0, 0, 0, 0, 0];
+
+                filtered.forEach(t => {
+                    const day = new Date(t.date).getDay();
+                    dayPnl[day] += this.calcPnL(t);
+                });
+
+                if (this.charts.dow) this.charts.dow.destroy();
+                this.charts.dow = new Chart(dowCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            data: dayPnl,
+                            backgroundColor: dayPnl.map(v => v >= 0 ? '#10b981' : '#ef4444')
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        onClick: (e, els) => {
+                            if (els.length > 0) {
+                                const idx = els[0].index;
+                                this.activeFilters.day = days[idx];
+                                this.render();
+                            }
+                        },
+                        onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+                        plugins: { legend: { display: false } },
+                        scales: { y: { grid: { color: '#222' }, ticks: { color: '#777' } }, x: { grid: { display: false } } }
+                    }
+                });
+
+                // --- Time of Day (Bucketed) ---
+                const todCtx = document.getElementById('timeOfDayChart').getContext('2d');
+                const buckets = ['Morning (6-10)', 'Mid-Day (10-14)', 'Afternoon (14-18)', 'Evening (18-22)', 'Overnight'];
+                const bucketPnl = [0, 0, 0, 0, 0];
+
+                filtered.forEach(t => {
+                    const h = new Date(t.date).getHours();
+                    let idx = 4; // Overnight default
+                    if (h >= 6 && h < 10) idx = 0;
+                    else if (h >= 10 && h < 14) idx = 1;
+                    else if (h >= 14 && h < 18) idx = 2;
+                    else if (h >= 18 && h < 22) idx = 3;
+
+                    bucketPnl[idx] += this.calcPnL(t);
+                });
+
+                if (this.charts.tod) this.charts.tod.destroy();
+                this.charts.tod = new Chart(todCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: buckets,
+                        datasets: [{
+                            data: bucketPnl,
+                            backgroundColor: '#8b5cf6',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        onClick: (e, els) => {
+                            if (els.length > 0) {
+                                const idx = els[0].index;
+                                const b = buckets[idx].split(' ')[0]; // "Morning" from "Morning (6-10)"
+                                this.activeFilters.time = b;
+                                this.render();
+                            }
+                        },
+                        onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+                        plugins: { legend: { display: false } },
+                        scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { grid: { color: '#222' } } }
+                    }
+                });
+
+
+            },
+
+            renderMistakes() {
+                const filtered = this.trades.filter(t => t.accId === this.activeAccId);
+                const map = {};
+                filtered.forEach(t => { if (t.tags) t.tags.forEach(tag => map[tag] = (map[tag] || 0) + 1) });
+                const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
+                const container = document.getElementById('mistake-list');
+                container.innerHTML = sorted.length ? '' : '<span class="text-muted">No behavioral tags logged yet.</span>';
+                sorted.forEach(([name, count]) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center';
+                    div.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${name}</span> <span class="mono" style="font-weight:700">${count}</span>`;
+                    container.appendChild(div);
+                });
+            },
+
+            renderStrategies() {
+                const filtered = this.trades.filter(t => t.accId === this.activeAccId);
+                const stratMap = {};
+                const selector = document.getElementById('filter-strat');
+                const currentSel = selector.value;
+
+                // Clear options but keep the first one
+                selector.innerHTML = '<option value="">All Strats</option>';
+
+                filtered.forEach(t => {
+                    const s = t.strategy || 'Unknown';
+                    stratMap[s] = (stratMap[s] || 0) + this.calcPnL(t);
+                });
+
+                const sorted = Object.entries(stratMap).sort((a, b) => b[1] - a[1]);
+                const container = document.getElementById('strategy-list');
+                container.innerHTML = sorted.length ? '' : '';
+
+                sorted.forEach(([name, pnl]) => {
+                    // Populate Chart List
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center';
+                    div.style.background = 'var(--bg-hover)';
+                    div.style.padding = '6px 10px';
+                    div.style.borderRadius = '4px';
+                    div.innerHTML = `
+                        <span class="text-main" style="font-size:0.8rem">${name}</span> 
+                        <span class="mono ${pnl >= 0 ? 'text-win' : 'text-loss'}" style="font-weight:700">$${pnl.toFixed(2)}</span>
+                    `;
+                    container.appendChild(div);
+
+                    // Populate Filter Dropdown (Unique)
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.innerText = name;
+                    selector.appendChild(opt);
+                });
+
+                // Restore selection if valid
+                if (currentSel && stratMap[currentSel] !== undefined) selector.value = currentSel;
+            },
+
+            renderAccountList() {
+                const cont = document.getElementById('acc-list-container');
+                cont.innerHTML = '';
+                this.accounts.forEach(a => {
+                    const div = document.createElement('div');
+                    div.style.padding = '10px';
+                    div.style.border = '1px solid var(--border)';
+                    div.style.borderRadius = '6px';
+                    div.className = 'flex justify-between items-center';
+                    div.innerHTML = `
+                        <div>
+                            <div style="font-weight:700">${a.name}</div>
+                            <div class="text-muted" style="font-size:0.7rem">Base: $${a.balance}</div>
+                        </div>
+                        ${this.accounts.length > 1 ? `<i class="fa-solid fa-trash-can text-loss" style="cursor:pointer" onclick="APP.deleteAccount('${a.id}')"></i>` : ''}
+                    `;
+                    cont.appendChild(div);
+                });
+            },
+
+            // --- CALENDAR LOGIC ---
+            changeMonth(delta) {
+                this.currentMonth += delta;
+                if (this.currentMonth > 11) { this.currentMonth = 0; this.currentYear++; }
+                else if (this.currentMonth < 0) { this.currentMonth = 11; this.currentYear--; }
+                this.renderCalendar();
+            },
+
+            renderCalendar() {
+                const grid = document.querySelector('.calendar-grid');
+                const monthYear = document.getElementById('cal-month-year');
+
+                const headers = Array.from(grid.querySelectorAll('.calendar-day-header'));
+                grid.innerHTML = '';
+                headers.forEach(h => grid.appendChild(h));
+
+                const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+                const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startDay = firstDay.getDay(); // 0 = Sun
+
+                monthYear.innerText = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+                for (let i = 0; i < startDay; i++) {
+                    const empty = document.createElement('div');
+                    empty.className = 'calendar-day empty';
+                    grid.appendChild(empty);
+                }
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    // Manual Date Construction to ignore Timezone offsets (Fix for "sync" issue)
+                    const m = String(this.currentMonth + 1).padStart(2, '0');
+                    const day = String(d).padStart(2, '0');
+                    const dateStr = `${this.currentYear}-${m}-${day}`;
+
+                    const dayTrades = this.trades.filter(t => t.accId === this.activeAccId && t.date.startsWith(dateStr));
+                    const dayPnL = dayTrades.reduce((s, t) => s + this.calcPnL(t), 0);
+                    const count = dayTrades.length;
+
+                    const entry = this.journal.find(j => j.date === dateStr);
+
+                    const el = document.createElement('div');
+                    el.className = 'calendar-day';
+
+                    const todayStr = new Date().toISOString().slice(0, 10);
+                    if (dateStr === todayStr) el.classList.add('today');
+
+                    let content = `<span class="day-num">${d}</span>`;
+
+                    if (entry) {
+                        content += `<div style="position:absolute; top:6px; right:6px; width:6px; height:6px; background:#fbbf24; border-radius:50%;"></div>`;
+                    }
+
+                    if (count > 0) {
+                        el.classList.add(dayPnL >= 0 ? 'profit' : 'loss');
+                        content += `
+                            <div class="day-pnl">${dayPnL >= 0 ? '+' : ''}${Math.round(dayPnL)}</div>
+                            <div class="day-trades">${count} trade${count > 1 ? 's' : ''}</div>
+                        `;
+                    }
+
+                    el.innerHTML = content;
+
+                    el.onclick = () => {
+                        this.openJournalModal(dateStr);
+                    };
+
+                    grid.appendChild(el);
+                }
+            },
+
+            exportData() {
+                const filtered = this.trades.filter(t => t.accId === this.activeAccId);
+                const csv = [
+                    ['Date', 'Symbol', 'Side', 'Strategy', 'Entry', 'Exit', 'Size', 'PnL', 'R-Score', 'Notes'],
+                    ...filtered.map(t => [t.date, t.symbol, t.side, t.strategy || '', t.entry, t.exitPrice || 'Open', t.size, this.calcPnL(t).toFixed(2), this.calcR(t), `"${t.notes}"`])
+                ];
+                const content = csv.map(e => e.join(",")).join("\n");
+                const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", `tradejournal_export_${new Date().toISOString().slice(0, 10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        };
+
+        window.onload = () => APP.init();
+    </script>
+</body>
+
+</html>
